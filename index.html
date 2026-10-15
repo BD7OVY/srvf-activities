@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="深圳公益救援志愿者联合会论坛活动聚合，定时自动抓取，按活动时间/发帖时间排序">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚨</text></svg>">
+<title>SRVF 活动汇总 · 深圳公益救援论坛活动聚合</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:#f3f4f6;color:#1f2937;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+body{min-height:100vh}
+a{color:#ea580c}
+button{font-family:inherit}
+
+.app{max-width:680px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;background:#f3f4f6}
+
+/* ===== 顶部 ===== */
+.hero{background:linear-gradient(135deg,#ea580c,#c2410c);color:#fff;padding:20px 16px 16px;border-radius:0 0 18px 18px;box-shadow:0 2px 12px rgba(194,65,12,.25)}
+.hero h1{font-size:21px;font-weight:700;letter-spacing:.5px;display:flex;align-items:center;gap:8px}
+.hero h1 .logo{width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,.18);display:inline-flex;align-items:center;justify-content:center;font-size:16px}
+.hero .sub{font-size:12px;opacity:.85;margin-top:5px}
+.hero-meta{display:flex;align-items:center;gap:10px;margin-top:12px;font-size:12px;flex-wrap:wrap}
+.hero-meta .pill{background:rgba(255,255,255,.16);border-radius:20px;padding:4px 10px;white-space:nowrap}
+.hero-meta .pill b{font-weight:600}
+.refresh-btn{margin-left:auto;appearance:none;border:none;background:rgba(255,255,255,.92);color:#c2410c;font-size:12px;font-weight:600;border-radius:20px;padding:5px 12px;cursor:pointer;display:inline-flex;align-items:center;gap:4px}
+.refresh-btn:active{transform:scale(.96)}
+.refresh-btn.loading{opacity:.7;pointer-events:none}
+
+/* ===== 工具栏 ===== */
+.toolbar{position:sticky;top:0;z-index:50;background:rgba(243,244,246,.92);backdrop-filter:blur(8px);padding:10px 12px 8px;display:flex;flex-direction:column;gap:8px;border-bottom:1px solid #e5e7eb}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{appearance:none;border:1px solid #d1d5db;background:#fff;color:#4b5563;font-size:12px;border-radius:18px;padding:4px 11px;cursor:pointer;white-space:nowrap}
+.chip i{font-style:normal;font-size:11px;color:#9ca3af;margin-left:2px}
+.chip.active{background:#1f2937;border-color:#1f2937;color:#fff}
+.chip.active i{color:#d1d5db}
+.sorts{display:flex;gap:6px;align-items:center}
+.sort-btn{appearance:none;border:1px solid #d1d5db;background:#fff;color:#4b5563;font-size:12px;border-radius:8px;padding:5px 10px;cursor:pointer;display:inline-flex;align-items:center;gap:3px;white-space:nowrap}
+.sort-btn.active{background:#ea580c;border-color:#ea580c;color:#fff;font-weight:600}
+.sort-btn .arrow{font-size:11px}
+.search-btn{margin-left:auto;appearance:none;border:1px solid #d1d5db;background:#fff;border-radius:8px;padding:4px 9px;cursor:pointer;font-size:13px;line-height:1.4}
+.searchbar{display:none;gap:6px;align-items:center}
+.searchbar.show{display:flex}
+.searchbar input{flex:1;appearance:none;border:1px solid #d1d5db;border-radius:18px;padding:6px 12px;font-size:13px;outline:none;background:#fff;min-width:0}
+.searchbar input:focus{border-color:#ea580c}
+.searchbar .clear{border:none;background:#e5e7eb;color:#4b5563;border-radius:50%;width:24px;height:24px;cursor:pointer;font-size:14px;line-height:1;flex-shrink:0}
+
+/* ===== 列表 ===== */
+.list{flex:1;padding:12px 12px 4px;display:flex;flex-direction:column;gap:10px}
+.card{background:#fff;border-radius:14px;padding:13px 13px 11px;box-shadow:0 1px 4px rgba(0,0,0,.06);cursor:pointer;transition:transform .12s,box-shadow .12s;display:flex;gap:11px}
+.card:active{transform:scale(.985)}
+.card.ended{opacity:.72}
+.card .badge{flex-shrink:0;width:46px;display:flex;flex-direction:column;align-items:center;background:#eff6ff;border-radius:12px;padding:7px 0 6px;box-shadow:inset 0 1px 2px rgba(255,255,255,.7)}
+.card .badge .wd{font-size:10px;color:#3b82f6;line-height:1.1}
+.card .badge .day{font-size:21px;font-weight:700;color:#1d4ed8;line-height:1.15}
+.card .badge .mo{font-size:9px;color:#93c5fd;line-height:1.1}
+.card.ended .badge{background:#f3f4f6}
+.card.ended .badge .wd{color:#9ca3af}
+.card.ended .badge .day{color:#6b7280}
+.card.ended .badge .mo{color:#d1d5db}
+.card .main{flex:1;min-width:0}
+.tags{display:flex;align-items:center;gap:5px;margin-bottom:4px;flex-wrap:wrap}
+.tag{font-size:10px;border-radius:5px;padding:1px 6px;line-height:1.5;white-space:nowrap}
+.tag.type{background:#f1f5f9;color:#475569;border:1px solid #e2e8f0}
+.tag.status-upcoming{background:#eff6ff;color:#2563eb}
+.tag.status-ongoing{background:#ecfdf5;color:#059669;font-weight:600}
+.tag.status-ended{background:#f3f4f6;color:#6b7280}
+.tag.tbd{background:#fffbeb;color:#b45309;border:1px solid #fde68a}
+.card .title{font-size:15px;font-weight:600;color:#111827;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-all}
+.times{margin-top:5px;display:flex;flex-direction:column;gap:2px}
+.t-act{font-size:13px;color:#059669;font-weight:600}
+.t-act .today{color:#dc2626}
+.t-post{font-size:12px;color:#9ca3af}
+.card .foot{margin-top:8px;padding-top:8px;border-top:1px dashed #e5e7eb;display:flex;flex-wrap:wrap;gap:4px 10px;font-size:12px;align-items:center}
+.foot .dl{color:#dc2626;font-weight:500}
+.foot .dl.passed{color:#9ca3af;text-decoration:line-through;font-weight:400}
+.foot .dl.none{color:#9ca3af;font-weight:400}
+.foot .signup{color:#7c3aed}
+.foot .loc{color:#4b5563;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.foot .author{color:#6b7280;white-space:nowrap}
+.foot .author .tid{color:#c4c9d1;margin-left:3px}
+.copy-btn{flex-shrink:0;align-self:flex-start;width:30px;height:30px;border:none;background:#fff7ed;border-radius:9px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;border:1px solid #fed7aa}
+.copy-btn:active{transform:scale(.92)}
+.empty{text-align:center;padding:46px 20px;color:#9ca3af;font-size:13px}
+.empty .icon{font-size:34px;margin-bottom:8px}
+.error-box{background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:16px;text-align:center;color:#b91c1c;font-size:13px}
+.error-box button{margin-top:10px;appearance:none;border:none;background:#dc2626;color:#fff;border-radius:8px;padding:7px 18px;font-size:13px;cursor:pointer}
+
+/* ===== 页脚 ===== */
+.foot-note{padding:14px 16px 22px;text-align:center;font-size:11px;color:#9ca3af;line-height:1.8}
+.foot-note a{color:#9ca3af;text-decoration:underline}
+.foot-note .dot{margin:0 4px}
+
+/* ===== 详情弹窗 ===== */
+.modal-mask{position:fixed;inset:0;background:rgba(17,24,39,.55);display:none;align-items:flex-end;justify-content:center;z-index:100}
+.modal-mask.show{display:flex}
+.modal{background:#fff;width:100%;max-width:680px;max-height:88vh;border-radius:18px 18px 0 0;display:flex;flex-direction:column;animation:slideUp .22s ease}
+@keyframes slideUp{from{transform:translateY(40px);opacity:.4}to{transform:translateY(0);opacity:1}}
+.modal-head{padding:15px 16px 12px;background:linear-gradient(135deg,#ea580c,#c2410c);color:#fff;border-radius:18px 18px 0 0;display:flex;gap:10px;align-items:flex-start;flex-shrink:0}
+.modal-head .t{flex:1;font-size:16px;font-weight:700;line-height:1.45;word-break:break-all}
+.modal-head .close{border:none;background:rgba(255,255,255,.2);color:#fff;width:28px;height:28px;border-radius:50%;font-size:16px;cursor:pointer;flex-shrink:0;line-height:1}
+.modal-body{overflow-y:auto;padding:14px 16px 18px;-webkit-overflow-scrolling:touch}
+.drow{display:flex;margin-bottom:9px;font-size:13px}
+.drow .k{width:76px;flex-shrink:0;color:#9ca3af}
+.drow .v{flex:1;color:#1f2937;word-break:break-all}
+.drow .v .go{display:inline-flex;align-items:center;margin-left:8px;padding:2px 10px;background:#ea580c;color:#fff;font-size:11px;border-radius:6px;text-decoration:none;white-space:nowrap}
+.drow .v .cp{display:inline-flex;align-items:center;margin-left:8px;padding:2px 10px;background:#f1f5f9;color:#475569;font-size:11px;border-radius:6px;white-space:nowrap;border:1px solid #e2e8f0;cursor:pointer}
+.dcontent{margin-top:6px;background:#f9fafb;border:1px solid #f3f4f6;border-radius:10px;padding:11px 12px;font-size:12.5px;color:#4b5563;line-height:1.75;white-space:pre-wrap;word-break:break-all;max-height:300px;overflow-y:auto}
+@media (min-width:481px){
+  .modal{align-self:center;margin-bottom:6vh;border-radius:18px}
+  .modal-head{border-radius:18px 18px 0 0}
+  .hero{border-radius:0 0 20px 20px}
+}
+
+/* ===== Toast ===== */
+.toast{position:fixed;top:42%;left:50%;transform:translate(-50%,-50%);background:rgba(17,24,39,.82);color:#fff;padding:9px 18px;border-radius:9px;font-size:13px;z-index:200;display:none;pointer-events:none;white-space:nowrap;max-width:82%;text-align:center}
+.toast.show{display:block}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="hero">
+    <h1><span class="logo">🚨</span>SRVF 活动汇总</h1>
+    <div class="sub">深圳市公益救援志愿者联合会 · 论坛活动自动聚合</div>
+    <div class="hero-meta">
+      <span class="pill" id="metaCount">加载中…</span>
+      <span class="pill" id="metaUpdate">最近更新 --</span>
+      <button class="refresh-btn" id="refreshBtn">↻ 刷新</button>
+    </div>
+  </header>
+
+  <div class="toolbar">
+    <div class="chips" id="statusChips">
+      <button class="chip active" data-status="todo">待办<i id="c-todo">·</i></button>
+      <button class="chip" data-status="upcoming">未开始<i id="c-upcoming">·</i></button>
+      <button class="chip" data-status="ongoing">进行中<i id="c-ongoing">·</i></button>
+      <button class="chip" data-status="ended">已结束<i id="c-ended">·</i></button>
+      <button class="chip" data-status="all">全部<i id="c-all">·</i></button>
+    </div>
+    <div class="sorts">
+      <button class="sort-btn active" data-sort="activity">活动时间<span class="arrow" id="arrow-activity">↑</span></button>
+      <button class="sort-btn" data-sort="post">发帖时间<span class="arrow" id="arrow-post"></span></button>
+      <button class="search-btn" id="searchToggle" title="搜索">🔍</button>
+    </div>
+    <div class="searchbar" id="searchBar">
+      <input id="searchInput" type="search" placeholder="搜索标题 / 发帖人 / 地点，回车清除">
+      <button class="clear" id="searchClear" title="清除">×</button>
+    </div>
+  </div>
+
+  <main class="list" id="list">
+    <div class="empty"><div class="icon">⏳</div>数据加载中…</div>
+  </main>
+
+  <footer class="foot-note">
+    <div>数据来源：<a href="http://www.srvf.cn/forum.php?mod=forumdisplay&fid=45" target="_blank" rel="noopener">深圳公益救援论坛 · 活动版块</a>，约每 6 小时自动抓取刷新</div>
+    <div>本页为志愿者个人制作的聚合工具，非官方页面<span class="dot">·</span>活动信息以论坛原帖为准</div>
+    <div id="footGen"></div>
+  </footer>
+</div>
+
+<!-- 详情弹窗 -->
+<div class="modal-mask" id="detailModal">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="t" id="dTitle"></div>
+      <button class="close" id="dClose" title="关闭">✕</button>
+    </div>
+    <div class="modal-body" id="dBody"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  'use strict';
+  var $ = function(s){ return document.querySelector(s); };
+  var DATA_URL = 'data/activities.json';
+
+  var state = {
+    posts: [],
+    sortType: 'activity',   // activity | post
+    sortOrder: 'asc',       // asc | desc
+    status: 'todo',         // todo | upcoming | ongoing | ended | all
+    keyword: ''
+  };
+
+  // ---------- 工具 ----------
+  function toast(msg, ms){
+    var t = $('#toast'); t.textContent = msg; t.classList.add('show');
+    clearTimeout(toast._t); toast._t = setTimeout(function(){ t.classList.remove('show'); }, ms || 1600);
+  }
+  function escapeHTML(s){
+    if(!s) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+  // "2026-10-15 19:30" 按本地时间解析（避免 Safari 当 UTC）
+  function parseLocal(s){
+    if(!s) return null;
+    var m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:\s+(\d{1,2}):(\d{2}))?/);
+    if(!m) return null;
+    return new Date(+m[1], +m[2]-1, +m[3], +(m[4]||0), +(m[5]||0));
+  }
+  var WD = ['周日','周一','周二','周三','周四','周五','周六'];
+  function p2(n){ return (n<10?'0':'') + n; }
+  function fmtDT(d){ return p2(d.getMonth()+1)+'-'+p2(d.getDate())+' '+p2(d.getHours())+':'+p2(d.getMinutes()); }
+  function fmtDate(d){ return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate()); }
+  function fmtFull(d){ return fmtDate(d)+' '+p2(d.getHours())+':'+p2(d.getMinutes())+' '+WD[d.getDay()]; }
+  function sameDay(a,b){ return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate(); }
+  function dayDiff(a,b){ var x=new Date(a.getFullYear(),a.getMonth(),a.getDate()), y=new Date(b.getFullYear(),b.getMonth(),b.getDate()); return Math.round((x-y)/86400000); }
+
+  // ---------- 数据处理 ----------
+  function process(p){
+    var start = parseLocal(p.activity_start);
+    var end = parseLocal(p.activity_end);
+    var deadline = parseLocal(p.signup_deadline);
+    var post = parseLocal(p.post_time);
+    var now = new Date();
+    var status;
+    if(!start){ status = 'unknown'; }
+    else if(now < start){ status = 'upcoming'; }
+    else if(!end && now < new Date(start.getTime()+2*3600*1000)){ status = 'ongoing'; }
+    else if(end && now <= end){ status = 'ongoing'; }
+    else { status = 'ended'; }
+
+    // 活动时间展示
+    var actText = '时间待定';
+    if(start){
+      var diff = dayDiff(start, now);
+      var prefix = diff===0 ? '今天 ' : (diff===1 ? '明天 ' : (diff===2 ? '后天 ' : ''));
+      var sTxt = fmtDT(start) + (diff>=0 && diff<=2 ? '' : ' ' + WD[start.getDay()]);
+      if(end){
+        if(sameDay(start,end)){ actText = prefix + sTxt + ' 至 ' + p2(end.getHours())+':'+p2(end.getMinutes()); }
+        else { actText = prefix + sTxt + ' 至 ' + fmtDT(end); }
+      } else {
+        actText = prefix + sTxt;
+      }
+      if(p.time_tbd) actText += '（时间待定）';
+    }
+    return {
+      raw: p, tid: p.tid, title: p.title || '(无标题)',
+      type: p.activity_type || '', author: p.author || '',
+      location: p.location || '', content: p.content || '',
+      signupCount: (typeof p.signup_count === 'number') ? p.signup_count : null,
+      postUrl: p.post_url, post: post, start: start, end: end, deadline: deadline,
+      status: status, actText: actText,
+      badgeWd: start ? WD[start.getDay()] : '--',
+      badgeDay: start ? String(start.getDate()) : '?',
+      badgeMo: start ? (start.getMonth()+1)+'月' : ''
+    };
+  }
+
+  function sortPosts(list){
+    var key = state.sortType === 'activity'
+      ? function(p){ return p.start ? p.start.getTime() : null; }
+      : function(p){ return p.post ? p.post.getTime() : null; }
+    var asc = state.sortOrder === 'asc';
+    return list.slice().sort(function(a,b){
+      var ta = key(a), tb = key(b);
+      if(ta === null && tb === null) return b.tid - a.tid;
+      if(ta === null) return 1;   // 无时间的永远排最后
+      if(tb === null) return -1;
+      return asc ? ta - tb : tb - ta;
+    });
+  }
+
+  function filtered(){
+    var kw = state.keyword.trim().toLowerCase();
+    return state.posts.filter(function(p){
+      if(state.status === 'todo' && !(p.status === 'upcoming' || p.status === 'ongoing')) return false;
+      if(state.status !== 'todo' && state.status !== 'all' && p.status !== state.status) return false;
+      if(kw){
+        var hay = (p.title + ' ' + p.author + ' ' + p.location).toLowerCase();
+        if(hay.indexOf(kw) < 0) return false;
+      }
+      return true;
+    });
+  }
+
+  // ---------- 渲染 ----------
+  function statusTag(p){
+    if(p.status === 'upcoming') return '<span class="tag status-upcoming">未开始</span>';
+    if(p.status === 'ongoing') return '<span class="tag status-ongoing">进行中</span>';
+    if(p.status === 'ended') return '<span class="tag status-ended">已结束</span>';
+    return '<span class="tag status-ended">时间待定</span>';
+  }
+
+  function render(){
+    var list = $('#list');
+    var data = sortPosts(filtered());
+    if(!data.length){
+      list.innerHTML = '<div class="empty"><div class="icon">📭</div>' +
+        (state.keyword ? '没有匹配「'+escapeHTML(state.keyword)+'」的活动' : '该分类下暂无活动') + '</div>';
+      return;
+    }
+    var html = data.map(function(p){
+      var dl;
+      if(!p.deadline){ dl = '<span class="dl none">报名截止不限</span>'; }
+      else if(p.deadline < new Date()){ dl = '<span class="dl passed">报名已截止 '+fmtDT(p.deadline)+'</span>'; }
+      else { dl = '<span class="dl">报名截止 '+fmtDT(p.deadline)+'</span>'; }
+      var signup = (p.signupCount !== null) ? '<span class="signup">已报名 '+p.signupCount+' 人</span>' : '';
+      return '<div class="card'+(p.status==='ended'?' ended':'')+'" data-tid="'+p.tid+'">' +
+        '<div class="badge"><div class="wd">'+p.badgeWd+'</div><div class="day">'+p.badgeDay+'</div><div class="mo">'+p.badgeMo+'</div></div>' +
+        '<div class="main">' +
+          '<div class="tags"><span class="tag type">'+escapeHTML(p.type || '活动')+'</span>'+statusTag(p)+'</div>' +
+          '<div class="title">'+escapeHTML(p.title)+'</div>' +
+          '<div class="times">' +
+            '<div class="t-act">🕐 '+escapeHTML(p.actText)+'</div>' +
+            '<div class="t-post">📝 发帖 '+(p.post ? fmtDT(p.post) : '--')+' · '+escapeHTML(p.author)+'</div>' +
+          '</div>' +
+          '<div class="foot">' + dl + signup +
+            '<span class="loc">📍 '+escapeHTML(p.location || '地点待定')+'</span>' +
+            '<span class="author">#'+p.tid+'</span>' +
+          '</div>' +
+        '</div>' +
+        '<button class="copy-btn" data-copy="'+p.tid+'" title="复制链接">🔗</button>' +
+      '</div>';
+    }).join('');
+    list.innerHTML = html;
+  }
+
+  function renderCounts(){
+    var c = {upcoming:0, ongoing:0, ended:0, all:state.posts.length, todo:0};
+    state.posts.forEach(function(p){
+      if(c[p.status] !== undefined) c[p.status]++;
+      if(p.status === 'upcoming' || p.status === 'ongoing') c.todo++;
+    });
+    $('#c-upcoming').textContent = c.upcoming;
+    $('#c-ongoing').textContent = c.ongoing;
+    $('#c-ended').textContent = c.ended;
+    $('#c-all').textContent = c.all;
+    $('#c-todo').textContent = c.todo;
+    $('#metaCount').innerHTML = '共 <b>'+c.all+'</b> 场活动 · 待办 <b>'+c.todo+'</b> 场';
+  }
+
+  function renderSortBtns(){
+    document.querySelectorAll('[data-sort]').forEach(function(btn){
+      var t = btn.getAttribute('data-sort');
+      btn.classList.toggle('active', t === state.sortType);
+      $('#arrow-'+t).textContent = (t === state.sortType) ? (state.sortOrder === 'asc' ? '↑' : '↓') : '';
+    });
+  }
+
+  // ---------- 详情 ----------
+  function openDetail(p){
+    $('#dTitle').textContent = p.title;
+    var rows = [];
+    function row(k, v){ rows.push('<div class="drow"><span class="k">'+k+'</span><span class="v">'+v+'</span></div>'); }
+    row('活动类型', escapeHTML(p.type || '—'));
+    row('活动地点', escapeHTML(p.location || '待定'));
+    row('活动时间', escapeHTML(p.actText));
+    row('报名截止', p.deadline ? fmtFull(p.deadline) + (p.deadline < new Date() ? '（已截止）' : '') : '不限');
+    if(p.signupCount !== null) row('已报名', p.signupCount + ' 人');
+    row('发帖版块', escapeHTML(p.author));
+    row('发帖时间', p.post ? fmtFull(p.post) : '—');
+    row('帖子链接', '<a href="'+escapeHTML(p.postUrl)+'" target="_blank" rel="noopener">'+escapeHTML(p.postUrl)+'</a>' +
+      '<a class="go" href="'+escapeHTML(p.postUrl)+'" target="_blank" rel="noopener">前往原帖 ↗</a>' +
+      '<span class="cp" id="dCopyAll">复制标题+链接</span>');
+    $('#dBody').innerHTML = rows.join('') +
+      (p.content ? '<div class="dcontent">'+escapeHTML(p.content)+'</div>' : '');
+    $('#dCopyAll').onclick = function(){
+      copyText(p.title + '\n' + p.postUrl, '已复制标题和链接');
+    };
+    $('#detailModal').classList.add('show');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function copyText(text, okMsg){
+    function done(){ toast(okMsg || '已复制'); }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(done, function(){ fallback(text, done); });
+    } else { fallback(text, done); }
+  }
+  function fallback(text, done){
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.left = '-9999px';
+    document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); done(); }catch(e){ toast('复制失败'); }
+    document.body.removeChild(ta);
+  }
+
+  // ---------- 加载 ----------
+  function load(){
+    var btn = $('#refreshBtn');
+    btn.classList.add('loading'); btn.textContent = '↻ 加载中';
+    fetch(DATA_URL + '?t=' + Date.now())
+      .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+      .then(function(d){
+        btn.classList.remove('loading'); btn.textContent = '↻ 刷新';
+        var acts = (d && d.activities) || [];
+        state.posts = acts.map(process);
+        renderCounts(); render();
+        if(d.generated_at){
+          var g = parseLocal(d.generated_at.replace('T',' ').replace(/(\+08:00|Z)$/,''));
+          $('#metaUpdate').textContent = '数据更新至 ' + (g ? fmtDT(g) : d.generated_at);
+          $('#footGen').textContent = '本页数据生成于 ' + (g ? fmtFull(g) : d.generated_at) + ' · 自动抓取间隔约 6 小时';
+        }
+      })
+      .catch(function(e){
+        btn.classList.remove('loading'); btn.textContent = '↻ 重试';
+        $('#list').innerHTML = '<div class="error-box">数据加载失败：'+escapeHTML(e.message||e)+
+          '<br><button id="retryBtn">重新加载</button></div>';
+        $('#retryBtn').onclick = load;
+      });
+  }
+
+  // ---------- 事件 ----------
+  function bind(){
+    // 状态筛选
+    $('#statusChips').addEventListener('click', function(e){
+      var chip = e.target.closest('.chip'); if(!chip) return;
+      document.querySelectorAll('.chip').forEach(function(c){ c.classList.remove('active'); });
+      chip.classList.add('active');
+      state.status = chip.getAttribute('data-status');
+      save(); render();
+    });
+    // 排序
+    document.querySelectorAll('[data-sort]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var t = btn.getAttribute('data-sort');
+        if(t === state.sortType){ state.sortOrder = state.sortOrder === 'asc' ? 'desc' : 'asc'; }
+        else { state.sortType = t; state.sortOrder = 'asc'; }
+        save(); renderSortBtns(); render();
+      });
+    });
+    // 搜索
+    $('#searchToggle').addEventListener('click', function(){
+      $('#searchBar').classList.toggle('show');
+      if($('#searchBar').classList.contains('show')) $('#searchInput').focus();
+    });
+    $('#searchInput').addEventListener('input', function(){ state.keyword = this.value; render(); });
+    $('#searchClear').addEventListener('click', function(){
+      $('#searchInput').value = ''; state.keyword = ''; render(); $('#searchInput').focus();
+    });
+    // 列表点击（复制按钮优先，避免冒泡触发详情）
+    $('#list').addEventListener('click', function(e){
+      var cp = e.target.closest('[data-copy]');
+      if(cp){
+        e.stopPropagation();
+        var p = state.posts.find(function(x){ return String(x.tid) === cp.getAttribute('data-copy'); });
+        if(p) copyText(p.postUrl, '链接已复制');
+        return;
+      }
+      var card = e.target.closest('.card');
+      if(card){
+        var tid = card.getAttribute('data-tid');
+        var post = state.posts.find(function(x){ return String(x.tid) === tid; });
+        if(post) openDetail(post);
+      }
+    });
+    // 弹窗关闭
+    $('#dClose').addEventListener('click', closeDetail);
+    $('#detailModal').addEventListener('click', function(e){ if(e.target === this) closeDetail(); });
+    document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeDetail(); });
+    // 刷新
+    $('#refreshBtn').addEventListener('click', load);
+  }
+  function closeDetail(){
+    $('#detailModal').classList.remove('show');
+    document.body.style.overflow = '';
+  }
+  function save(){
+    try{
+      localStorage.setItem('srvf_sort', state.sortType + ':' + state.sortOrder);
+      localStorage.setItem('srvf_status', state.status);
+    }catch(_){}
+  }
+  function restore(){
+    try{
+      var s = (localStorage.getItem('srvf_sort') || '').split(':');
+      if(s[0] === 'activity' || s[0] === 'post') state.sortType = s[0];
+      if(s[1] === 'asc' || s[1] === 'desc') state.sortOrder = s[1];
+      var st = localStorage.getItem('srvf_status');
+      if(['todo','upcoming','ongoing','ended','all'].indexOf(st) >= 0) state.status = st;
+    }catch(_){}
+    document.querySelectorAll('.chip').forEach(function(c){
+      c.classList.toggle('active', c.getAttribute('data-status') === state.status);
+    });
+  }
+
+  restore(); bind(); renderSortBtns(); load();
+})();
+</script>
+</body>
+</html>
