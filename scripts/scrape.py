@@ -249,6 +249,72 @@ def parse_first_post(html):
     return txt
 
 
+def parse_applicants(html):
+    """解析报名者名单，返回 (approved, pending, totals)。
+    approved/pending 为昵称列表；totals = {"approved": N, "pending": M} 为
+    标题栏标注的人数（注意：插件对"暂未通过"名单只渲染前若干个，
+    实际拿到的列表可能少于标题人数，前端需标注"仅展示前 N 个"）。
+    兼容两种结构：
+    1) 新版 mxapplylist：<h2>已通过 (167 人)</h2> 后跟若干
+       <li ...><a><img/></a><p>昵称</p></li>（暂未通过块可能没有 ul 包裹）；
+    2) 旧版表格：<div id="applylist_{tid}"><table class="dt"> 每行含
+       用户名链接 + 审核状态单元格（已通过/暂未通过）+ 申请时间。
+    无人报名时两个列表均为空。
+    """
+    approved, pending = [], []
+    totals = {}
+
+    # ---- 结构 1：新版 h2 + li/p ----
+    for m in re.finditer(
+            r"<h2>\s*(已通过|暂未通过)\s*\((\d+)\s*人\)\s*</h2>(.{0,500000}?)(?=<h2>|<div class=\"layout\">|</body>)",
+            html, re.S):
+        status, count, seg = m.group(1), int(m.group(2)), m.group(3)
+        totals["approved" if status == "已通过" else "pending"] = count
+        names = []
+        for li in re.findall(r"<li[^>]*>(.*?)</li>", seg, re.S):
+            pm = re.search(r"<p>(.*?)</p>", li, re.S)
+            if pm:
+                name = re.sub(r"\s+", " ", clean_tags(pm.group(1))).strip()
+                if name:
+                    names.append(name)
+        if count and len(names) != count:
+            log("  提示：%s 名单数(%d)与标题人数(%d)不一致（插件可能只渲染前若干个）" %
+                (status, len(names), count))
+        (approved if status == "已通过" else pending).extend(names)
+
+    # ---- 结构 2：旧版表格 ----
+    tm = re.search(r'id="applylist_\d+">(.*?)</table>', html, re.S)
+    if tm:
+        for row in re.findall(r"<tr>(.*?)</tr>", tm.group(1), re.S):
+            if "<th" in row:
+                continue
+            cells = re.findall(r"<td[^>]*>(.*?)</td>", row, re.S)
+            if len(cells) < 4:
+                continue
+            nm = re.search(r"<a[^>]*>([^<]+)</a>", cells[0])
+            if not nm:
+                continue
+            name = clean_tags(nm.group(1)).strip()
+            status = re.sub(r"\s+", " ", clean_tags(cells[-2])).strip()
+            if not name:
+                continue
+            if "已通过" in status:
+                approved.append(name)
+            elif "暂未通过" in status or "未通过" in status:
+                pending.append(name)
+
+    # 去重（保序）
+    def dedup(seq):
+        seen, out = set(), []
+        for x in seq:
+            if x not in seen:
+                seen.add(x)
+                out.append(x)
+        return out
+
+    return dedup(approved), dedup(pending), totals
+
+
 def parse_thread_page(html):
     """解析详情页，返回活动字段"""
     fields = parse_act_block(html)
@@ -278,6 +344,12 @@ def parse_thread_page(html):
     out["time_tbd"] = tbd
 
     out["content"] = parse_first_post(html)
+
+    approved, pending, totals = parse_applicants(html)
+    out["approved_names"] = approved
+    out["pending_names"] = pending
+    out["approved_total"] = totals.get("approved", len(approved))
+    out["pending_total"] = totals.get("pending", len(pending))
     return out
 
 
@@ -447,6 +519,10 @@ def main():
             "time_tbd": bool(info.get("time_tbd")),
             "signup_deadline": info.get("signup_deadline") or old.get("signup_deadline"),
             "signup_count": info.get("signup_count"),
+            "approved_names": info.get("approved_names", []),
+            "pending_names": info.get("pending_names", []),
+            "approved_total": info.get("approved_total", 0),
+            "pending_total": info.get("pending_total", 0),
             "location": info.get("location", "") or old.get("location", ""),
             "replies": stub["replies"] if stub else old.get("replies", 0),
             "views": stub["views"] if stub else old.get("views", 0),
