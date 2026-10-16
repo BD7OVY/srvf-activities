@@ -186,7 +186,7 @@ button{font-family:inherit}
   </main>
 
   <footer class="foot-note">
-    <div>数据来源：<a href="http://www.srvf.cn/forum.php?mod=forumdisplay&fid=45" target="_blank" rel="noopener">深圳公益救援论坛 · 活动版块</a>，约每 6 小时自动抓取刷新</div>
+    <div>数据来源：<a href="http://www.srvf.cn/forum.php?mod=forumdisplay&fid=45" target="_blank" rel="noopener">深圳公益救援论坛 · 活动版块</a>，约每小时自动抓取刷新</div>
     <div>本页为志愿者个人制作的聚合工具，非官方页面<span class="dot">·</span>活动信息以论坛原帖为准</div>
     <div id="footGen"></div>
   </footer>
@@ -537,7 +537,7 @@ button{font-family:inherit}
         if(d.generated_at){
           var g = parseLocal(d.generated_at.replace('T',' ').replace(/(\+08:00|Z)$/,''));
           $('#metaUpdate').textContent = '数据更新至 ' + (g ? fmtDT(g) : d.generated_at);
-          $('#footGen').textContent = '本页数据生成于 ' + (g ? fmtFull(g) : d.generated_at) + ' · 自动抓取间隔约 6 小时';
+          $('#footGen').textContent = '本页数据生成于 ' + (g ? fmtFull(g) : d.generated_at) + ' · 自动抓取间隔约 1 小时';
         }
       })
       .catch(function(e){
