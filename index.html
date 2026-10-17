@@ -118,27 +118,6 @@ button{font-family:inherit}
 .names .nm.ok{background:#ecfdf5;border-color:#a7f3d0;color:#047857}
 .names .nm.wait{background:#fffbeb;border-color:#fde68a;color:#b45309}
 .names-empty{font-size:12px;color:#9ca3af}
-/* ===== 登录报名 ===== */
-.signup-panel{margin-top:12px;background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:12px}
-.signup-panel .sp-title{font-size:13px;font-weight:700;color:#c2410c;margin-bottom:8px;display:flex;align-items:center;gap:6px}
-.signup-panel .sp-title .tip{font-weight:400;font-size:11px;color:#9ca3af}
-.signup-panel input{width:100%;appearance:none;border:1px solid #fdba74;border-radius:8px;padding:8px 10px;font-size:13px;margin-bottom:8px;outline:none;background:#fff;color:#1f2937}
-.signup-panel input:focus{border-color:#ea580c}
-.signup-panel .sp-btns{display:flex;gap:8px}
-.signup-panel button{flex:1;appearance:none;border:none;border-radius:8px;padding:9px 0;font-size:13px;font-weight:600;cursor:pointer}
-.signup-panel .sp-apply{background:#ea580c;color:#fff}
-.signup-panel .sp-apply:active{transform:scale(.97)}
-.signup-panel .sp-check{background:#fff;color:#c2410c;border:1px solid #fdba74 !important}
-.signup-panel button:disabled{opacity:.6;pointer-events:none}
-.signup-panel .sp-note{font-size:11px;color:#b45309;margin-top:8px;line-height:1.6}
-.signup-panel .sp-result{display:none;margin-top:8px;font-size:12.5px;border-radius:8px;padding:8px 10px;line-height:1.6;word-break:break-all}
-.signup-panel .sp-result.show{display:block}
-.signup-panel .sp-result.ok{background:#ecfdf5;color:#047857;border:1px solid #a7f3d0}
-.signup-panel .sp-result.err{background:#fef2f2;color:#b91c1c;border:1px solid #fecaca}
-.signup-panel.closed{background:#f9fafb;border-color:#e5e7eb}
-.signup-panel.closed .sp-title{color:#6b7280}
-.signup-panel.closed input,.signup-panel.closed .sp-check{opacity:.5;pointer-events:none}
-.signup-panel.closed .sp-note{color:#9ca3af}
 @media (min-width:481px){
   .modal{align-self:center;margin-bottom:6vh;border-radius:18px}
   .modal-head{border-radius:18px 18px 0 0}
@@ -416,74 +395,6 @@ button{font-family:inherit}
     return html + '</div>';
   }
 
-  // ---------- 登录报名 ----------
-  var SIGNUP_API = 'https://srvf-signup-proxy.app.workbuddy.host/api/apply';  // 报名代理地址
-
-  function signupPanelHtml(p){
-    var closed = (p.deadline && p.deadline < new Date()) || p.status === 'ended';
-    var h = '<div class="signup-panel'+(closed?' closed':'')+'" id="signupPanel">' +
-      '<div class="sp-title">🔐 论坛账号报名' +
-        (closed ? '<span class="tip">报名已截止，可前往原帖查看</span>' : '<span class="tip">仅本人账号·不记录密码</span>') + '</div>' +
-      '<input id="spUser" type="text" placeholder="论坛用户名 / 邮箱" autocomplete="off">' +
-      '<input id="spPass" type="password" placeholder="论坛密码" autocomplete="new-password">' +
-      '<input id="spMsg" type="text" placeholder="报名留言（选填，如保险单号）" maxlength="200" autocomplete="off">' +
-      '<div class="sp-btns">' +
-        '<button class="sp-check" id="spCheckBtn">验证登录</button>' +
-        '<button class="sp-apply" id="spApplyBtn"'+(closed?' disabled':'')+'>登录并报名</button>' +
-      '</div>' +
-      '<div class="sp-result" id="spResult"></div>' +
-      '<div class="sp-note">账号密码仅用于当次报名请求转发至救援队论坛（srvf.cn），本页面与代理服务均不存储、不记录；报名结果以论坛审核为准。</div>' +
-    '</div>';
-    return h;
-  }
-
-  function bindSignupPanel(p){
-    var result = $('#spResult');
-    function show(msg, ok){
-      result.textContent = msg;
-      result.className = 'sp-result show ' + (ok ? 'ok' : 'err');
-    }
-    function busy(on){
-      $('#spApplyBtn').disabled = on;
-      $('#spCheckBtn').disabled = on;
-      $('#spApplyBtn').textContent = on ? '提交中…' : '登录并报名';
-    }
-    function creds(){
-      var u = $('#spUser').value.trim();
-      var pw = $('#spPass').value;
-      if(!u || !pw){ show('请填写论坛用户名和密码', false); return null; }
-      return {username: u, password: pw, tid: String(p.tid)};
-    }
-    function post(url, body){
-      return fetch(url, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(body)
-      }).then(function(r){ return r.json(); });
-    }
-    $('#spCheckBtn').onclick = function(){
-      var c = creds(); if(!c) return;
-      if(!SIGNUP_API){ show('报名服务未配置，暂时无法在线报名，请前往原帖报名', false); return; }
-      busy(true); show('正在验证账号…', true);
-      post(SIGNUP_API.replace(/\/api\/apply\/?$/, '/api/login'), {username: c.username, password: c.password})
-        .then(function(d){ busy(false); show(d.msg + (d.nickname ? '（' + d.nickname + '）' : ''), !!d.ok); })
-        .catch(function(){ busy(false); show('网络错误，请稍后重试', false); });
-    };
-    $('#spApplyBtn').onclick = function(){
-      var c = creds(); if(!c) return;
-      if(!SIGNUP_API){ show('报名服务未配置，暂时无法在线报名，请前往原帖报名', false); return; }
-      c.message = $('#spMsg').value.trim();
-      busy(true); show('正在提交报名…', true);
-      post(SIGNUP_API, c)
-        .then(function(d){
-          busy(false);
-          show(d.msg + (d.nickname ? '（' + d.nickname + '）' : ''), !!d.ok);
-          if(d.ok){ $('#spApplyBtn').textContent = '已报名 ✓'; }
-        })
-        .catch(function(){ busy(false); show('网络错误，请稍后重试', false); });
-    };
-  }
-
   function openDetail(p){
     $('#dTitle').textContent = p.title;
     var rows = [];
@@ -499,12 +410,11 @@ button{font-family:inherit}
     row('帖子链接', '<a href="'+escapeHTML(p.postUrl)+'" target="_blank" rel="noopener">'+escapeHTML(p.postUrl)+'</a>' +
       '<a class="go" href="'+escapeHTML(p.postUrl)+'" target="_blank" rel="noopener">前往原帖 ↗</a>' +
       '<span class="cp" id="dCopyAll">复制标题+链接</span>');
-    $('#dBody').innerHTML = rows.join('') + signupPanelHtml(p) +
+    $('#dBody').innerHTML = rows.join('') +
       (p.content ? '<div class="dcontent">'+escapeHTML(p.content)+'</div>' : '');
     $('#dCopyAll').onclick = function(){
       copyText(p.title + '\n' + p.postUrl, '已复制标题和链接');
     };
-    bindSignupPanel(p);
     $('#detailModal').classList.add('show');
     document.body.style.overflow = 'hidden';
   }
